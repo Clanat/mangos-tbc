@@ -29,10 +29,14 @@
 #include "AuctionHouseMgr.h"
 #include "Item.h"
 
+#include <deque>
+#include <mutex>
+
 struct ItemPrototype;
 struct AuctionEntry;
 struct AuctionHouseEntry;
 struct DeclinedName;
+struct TradeStatusInfo;
 
 class ObjectGuid;
 class Creature;
@@ -217,13 +221,13 @@ class MANGOS_DLL_SPEC WorldSession
         void SendTabardVendorActivate(ObjectGuid guid);
         void SendSpiritResurrect();
         void SendBindPoint(Creature* npc);
-        void SendGMTicketGetTicket(uint32 status, GMTicket* ticket = NULL);
+        void SendGMTicketGetTicket(uint32 status, GMTicket* ticket = nullptr);
 
         void SendAttackStop(Unit const* enemy);
 
         void SendBattlegGroundList(ObjectGuid guid, BattleGroundTypeId bgTypeId);
 
-        void SendTradeStatus(TradeStatus status);
+        void SendTradeStatus(const TradeStatusInfo& status);
         void SendUpdateTrade(bool trader_state = true);
         void SendCancelTrade();
 
@@ -293,8 +297,6 @@ class MANGOS_DLL_SPEC WorldSession
         bool LookingForGroup_auto_add;
 
         void BuildPartyMemberStatsChangedPacket(Player* player, WorldPacket* data);
-
-        void DoLootRelease(ObjectGuid lguid);
 
         // Account mute time
         time_t m_muteTime;
@@ -772,7 +774,9 @@ class MANGOS_DLL_SPEC WorldSession
         uint32 m_clientTimeDelay;
         uint32 m_Tutorials[8];
         TutorialDataState m_tutorialState;
-        ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
+
+        std::mutex m_recvQueueLock;
+        std::deque<WorldPacket *> m_recvQueue;
 };
 #endif
 /// @}
